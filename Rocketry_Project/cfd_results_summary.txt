@@ -1,0 +1,16 @@
+CFD-lite (Potential Flow + Empirical Drag) Fin Analysis Summary
+=================================================================
+Freestream velocity = 100.0 m/s, Reynolds number (chord) = 7.50e+05
+Chord = 112.50 mm, Max thickness = 4.00 mm (t/c = 0.036)
+
+Min Cp (max suction, near thickest point) = -0.092
+Max Cp (near stagnation points, LE/TE)   = 0.140
+
+Estimated turbulent flat-plate Cf        = 0.00495
+Form factor (thickness correction)       = 1.0712
+Estimated total drag coefficient Cd       = 0.01060
+Estimated drag force per unit span        = 7.301 N/m
+
+Note: This is an inviscid + empirical estimate for discussion purposes.
+Actual drag, wake formation, and separation must be obtained from the
+viscous CFD run in SimScale as required by the assignment.
