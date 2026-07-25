@@ -1,0 +1,15 @@
+FEM Fin Analysis Summary
+========================================
+Dynamic pressure q = 6125.00 Pa (V = 100.0 m/s)
+Root chord = 150.0 mm, Tip chord = 75.0 mm
+Span = 100.0 mm, Thickness = 4.0 mm
+Material: Aluminium 6061-T6 (E=68.9 GPa, Yield=276 MPa)
+
+Mesh Convergence:
+  Coarse (4 elements)          Tip defl = 0.1507 mm, Max stress = 6.173 MPa
+  Medium (16 elements)         Tip defl = 0.1475 mm, Max stress = 7.250 MPa
+  Fine (64 elements)           Tip defl = 0.1474 mm, Max stress = 7.552 MPa
+
+Max root stress (finest mesh) = 7.552 MPa
+Factor of Safety = Yield / Max Stress = 36.54
+Structural status: SAFE

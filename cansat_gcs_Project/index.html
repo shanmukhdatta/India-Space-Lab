@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CANSAT-GCS &mdash; Mission Ground Control Software</title>
+
+<!-- Fonts load from Google Fonts when internet is available; the UI falls
+     back gracefully to system fonts (see css/style.css font stacks) if not. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/vendor/leaflet.css" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============ TOP CONTROL BAR ============ -->
+<header class="topbar">
+  <div class="topbar__brand">
+    <div class="brand-mark">CS</div>
+    <div class="brand-text">
+      <span class="brand-title">CANSAT&nbsp;GCS</span>
+      <span class="brand-sub">Mission Ground Control Software</span>
+    </div>
+  </div>
+
+  <div class="topbar__status">
+    <div class="status-chip" id="linkStatus" data-state="idle">
+      <span class="status-dot"></span>
+      <span class="status-text">LINK: IDLE</span>
+    </div>
+    <div class="status-clock">
+      <span id="missionClock">T+00:00:00</span>
+      <span id="utcClock" class="utc">-- UTC --</span>
+    </div>
+  </div>
+
+  <div class="topbar__controls">
+    <button id="btnPort" class="btn btn--outline">Connect Serial</button>
+    <button id="btnStart" class="btn btn--go" disabled>▶ Start Telemetry</button>
+    <button id="btnStop" class="btn btn--stop" disabled>■ Stop</button>
+    <div class="divider"></div>
+    <button id="btnSyncTime" class="btn btn--ghost">Sync PC Time</button>
+    <button id="btnResetPacket" class="btn btn--ghost">Reset Packet</button>
+    <div class="divider"></div>
+    <button id="btnExportCsv" class="btn btn--ghost">Export CSV</button>
+    <button id="btnExportGraph" class="btn btn--ghost">Export Graph</button>
+    <div class="divider"></div>
+    <button id="btnSimToggle" class="btn btn--outline" title="Toggle demo telemetry generator (no hardware required)">Demo Sim: OFF</button>
+  </div>
+</header>
+
+<!-- ============ MAIN GRID ============ -->
+<main class="grid">
+
+  <!-- LEFT COLUMN: Telemetry + Error Codes -->
+  <section class="panel panel--telemetry" aria-label="Telemetry Display">
+    <h2 class="panel__title">Telemetry <span class="panel__title-accent">/ Container</span></h2>
+    <div class="tele-grid" id="containerTelemetry">
+      <div class="tele-cell"><span class="tele-label">Packet #</span><span class="tele-value" id="t-packet">0000</span></div>
+      <div class="tele-cell"><span class="tele-label">Mission Time</span><span class="tele-value" id="t-mtime">00:00:00</span></div>
+      <div class="tele-cell"><span class="tele-label">Altitude (m)</span><span class="tele-value" id="t-alt">0.0</span></div>
+      <div class="tele-cell"><span class="tele-label">Pressure (kPa)</span><span class="tele-value" id="t-press">0.0</span></div>
+      <div class="tele-cell"><span class="tele-label">Temp (°C)</span><span class="tele-value" id="t-temp">0.0</span></div>
+      <div class="tele-cell"><span class="tele-label">Battery (V)</span><span class="tele-value" id="t-batt">0.00</span></div>
+      <div class="tele-cell"><span class="tele-label">Descent Rate (m/s)</span><span class="tele-value" id="t-desc">0.0</span></div>
+      <div class="tele-cell"><span class="tele-label">GPS Sats</span><span class="tele-value" id="t-sats">0</span></div>
+    </div>
+
+    <h2 class="panel__title">Telemetry <span class="panel__title-accent">/ Payload</span></h2>
+    <div class="tele-grid" id="payloadTelemetry">
+      <div class="tele-cell"><span class="tele-label">Roll (°)</span><span class="tele-value" id="p-roll">0.0</span></div>
+      <div class="tele-cell"><span class="tele-label">Pitch (°)</span><span class="tele-value" id="p-pitch">0.0</span></div>
+      <div class="tele-cell"><span class="tele-label">Yaw (°)</span><span class="tele-value" id="p-yaw">0.0</span></div>
+      <div class="tele-cell"><span class="tele-label">GPS Lat</span><span class="tele-value" id="p-lat">0.000000</span></div>
+      <div class="tele-cell"><span class="tele-label">GPS Lon</span><span class="tele-value" id="p-lon">0.000000</span></div>
+      <div class="tele-cell"><span class="tele-label">GPS Alt (m)</span><span class="tele-value" id="p-galt">0.0</span></div>
+    </div>
+
+    <h2 class="panel__title">Error Code <span class="panel__title-accent">/ Live Fault Monitor</span></h2>
+    <div class="error-module">
+      <div class="seven-seg" id="errorDigits">
+        <span class="digit" data-digit="0">0</span>
+        <span class="digit" data-digit="1">0</span>
+        <span class="digit" data-digit="2">0</span>
+        <span class="digit" data-digit="3">0</span>
+      </div>
+      <ul class="error-legend">
+        <li id="err-desc" class="ok"><span class="dot"></span>D1 · Descent Rate</li>
+        <li id="err-gps" class="ok"><span class="dot"></span>D2 · GPS Availability</li>
+        <li id="err-sep" class="ok"><span class="dot"></span>D3 · Payload Separation</li>
+        <li id="err-para" class="ok"><span class="dot"></span>D4 · Emergency Parachute</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CENTER COLUMN: Map + Orientation -->
+  <section class="panel panel--map" aria-label="Tracking Map">
+    <h2 class="panel__title">Tracking Map <span class="panel__title-accent">/ Live GPS + Path</span></h2>
+    <div id="map" class="map-box"></div>
+    <div class="map-readout">
+      <span>LAT <b id="map-lat">0.000000</b></span>
+      <span>LON <b id="map-lon">0.000000</b></span>
+      <span>PATH PTS <b id="map-pts">0</b></span>
+    </div>
+  </section>
+
+  <section class="panel panel--orientation" aria-label="Orientation Visualization">
+    <h2 class="panel__title">Orientation <span class="panel__title-accent">/ Attitude Model</span></h2>
+    <div id="orientation3d" class="orient-box"></div>
+    <div class="orient-readout">
+      <span>ROLL <b id="o-roll">0.0°</b></span>
+      <span>PITCH <b id="o-pitch">0.0°</b></span>
+      <span>YAW <b id="o-yaw">0.0°</b></span>
+    </div>
+  </section>
+
+  <!-- RIGHT COLUMN: Graphs + Video + Mission Control -->
+  <section class="panel panel--graphs" aria-label="Real-Time Graphs">
+    <h2 class="panel__title">Real-Time Graphs</h2>
+    <div class="graph-grid">
+      <div class="graph-cell"><canvas id="chartAlt"></canvas></div>
+      <div class="graph-cell"><canvas id="chartPress"></canvas></div>
+      <div class="graph-cell"><canvas id="chartTemp"></canvas></div>
+      <div class="graph-cell"><canvas id="chartDesc"></canvas></div>
+      <div class="graph-cell graph-cell--wide"><canvas id="chartBatt"></canvas></div>
+    </div>
+  </section>
+
+  <section class="panel panel--video" aria-label="Live Video Stream">
+    <h2 class="panel__title">Live Video <span class="panel__title-accent">/ Payload Cam</span></h2>
+    <div class="video-wrap">
+      <video id="videoFeed" autoplay muted playsinline></video>
+      <div class="video-status" id="videoStatus">STREAM: OFF</div>
+    </div>
+    <div class="video-controls">
+      <select id="cameraSelect" class="select"></select>
+      <button id="btnVideoStart" class="btn btn--go btn--sm">Start</button>
+      <button id="btnVideoStop" class="btn btn--stop btn--sm" disabled>Stop</button>
+    </div>
+  </section>
+
+  <section class="panel panel--mcp" aria-label="Mission Control Panel">
+    <h2 class="panel__title">Mission Control <span class="panel__title-accent">/ Critical Commands</span></h2>
+    <div class="mcp-grid">
+      <button class="mcp-btn mcp-btn--sep" id="cmdSeparation">
+        <span class="mcp-btn__label">Manual Separation</span>
+        <span class="mcp-btn__hint">CMD 0x01</span>
+      </button>
+      <button class="mcp-btn mcp-btn--chute" id="cmdParachute">
+        <span class="mcp-btn__label">Emergency Parachute Deploy</span>
+        <span class="mcp-btn__hint">CMD 0x02</span>
+      </button>
+      <button class="mcp-btn mcp-btn--redundant" id="cmdRedundant">
+        <span class="mcp-btn__label">Redundant Activation</span>
+        <span class="mcp-btn__hint">CMD 0x03</span>
+      </button>
+    </div>
+    <div class="mcp-log" id="mcpLog">
+      <div class="mcp-log__row mcp-log__row--head">
+        <span>TIME</span><span>COMMAND</span><span>STATUS</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <span>CANSAT-GCS v1.0 &middot; India Space Lab &middot; Bharat Antariksh Prayogshala</span>
+  <span id="footerPacketCount">Packets received: 0</span>
+</footer>
+
+<!-- ============ LIBRARIES ============ -->
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/vendor/leaflet.js"></script>
+<script src="assets/vendor/three.min.js"></script>
+
+<!-- ============ APP MODULES ============ -->
+<script src="js/telemetry.js"></script>
+<script src="js/errorcodes.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/map.js"></script>
+<script src="js/orientation.js"></script>
+<script src="js/video.js"></script>
+<script src="js/serial.js"></script>
+<script src="js/datamanager.js"></script>
+<script src="js/missioncontrol.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

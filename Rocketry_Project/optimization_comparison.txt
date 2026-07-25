@@ -1,0 +1,15 @@
+Bonus Task: Design Optimization Comparison
+============================================================
+Optimization change: root chord 150->140 mm, tip chord 75->70 mm
+(slightly less aggressive taper) and thickness 4.0->4.5 mm.
+
+max_stress_MPa         | Original:     7.5523 | Optimized:     5.9673
+tip_deflection_mm      | Original:     0.1474 | Optimized:     0.1035
+FoS                    | Original:    36.5450 | Optimized:    46.2523
+Cd                     | Original:     0.0106 | Optimized:     0.0109
+drag_per_span_N_m      | Original:     7.3010 | Optimized:     7.0038
+mass_g                 | Original:   121.5000 | Optimized:   127.5750
+
+Root stress change: -21.0%
+Drag coefficient change: +2.8%
+Mass change: +5.0%
